@@ -1,0 +1,39 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//This code makes platforms one way, and was taken from:
+// https://answers.unity.com/questions/236313/one-way-collider.html
+
+public class TopCollision : MonoBehaviour {
+
+    public bool topCollision = true;
+    public float maxAngle = 45f;
+    MeshCollider mc;
+
+	void Start ()
+    {
+        float cos = Mathf.Cos(maxAngle);
+        mc = GetComponent<MeshCollider>();
+        Mesh M = new Mesh();
+        Vector3[] verts = mc.sharedMesh.vertices;
+        List<int> triangles = new List<int>(mc.sharedMesh.triangles);
+        for (int i = triangles.Count - 1; i >= 0; i -= 3)
+        {
+            Vector3 P1 = transform.TransformPoint(verts[triangles[i - 2]]);
+            Vector3 P2 = transform.TransformPoint(verts[triangles[i - 1]]);
+            Vector3 P3 = transform.TransformPoint(verts[triangles[i]]);
+            Vector3 faceNormal = Vector3.Cross(P3 - P2, P1 - P2).normalized;
+            if ((topCollision && Vector3.Dot(faceNormal, Vector3.up) <= cos) ||
+                 (!topCollision && Vector3.Dot(faceNormal, -Vector3.up) <= cos))
+            {
+                triangles.RemoveAt(i);
+                triangles.RemoveAt(i - 1);
+                triangles.RemoveAt(i - 2);
+            }
+        }
+        M.vertices = verts;
+        M.triangles = triangles.ToArray();
+        mc.sharedMesh = M;
+    }
+}
